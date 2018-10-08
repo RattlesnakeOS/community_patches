@@ -1,7 +1,7 @@
 ## Overview
 These are optional patches provided by the community that can be applied to the RattlesnakeOS build process. There are two options on how to use these:
-* If you want all the patches here (and additional ones that may be added in future), then just pass this repository as is to the build tool (e.g. --repo-patches https://github.com/RattlesnakeOS/community_patches.git)
-* If you want to pick and choose patches from this repo, you can fork this repository and update the `manifest` file to only include the patches you'd like then pass in your forked repository (e.g. (e.g. --repo-patches https://github.com/yourrepo/community_patches.git).
+* If you want all the patches here (and additional ones that may be added in future), then just pass this repository as is to the rattlesnakeos-stack tool (e.g. --repo-patches https://github.com/RattlesnakeOS/community_patches.git)
+* If you want to pick and choose patches from this repo, you can fork this repository and update the `manifest` file to only include the patches you'd like then pass in your forked repository to rattlesnakeos-stack (e.g. --repo-patches https://github.com/yourrepo/community_patches.git).
 
 ## Submitting Patches
 Rules for submitting a patch:
