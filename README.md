@@ -1,9 +1,12 @@
 ## Overview
-These are optional patches provided by the community that can be applied to the RattlesnakeOS build process. There are two options on how to use these:
-* If you want all the patches here (and additional ones that may be added in future), then just pass this repository as is to the rattlesnakeos-stack tool (e.g. --repo-patches https://github.com/RattlesnakeOS/community_patches.git)
-* If you want to pick and choose patches from this repo, you can fork this repository and update the `manifest` file to only include the patches you'd like then pass in your forked repository to rattlesnakeos-stack (e.g. --repo-patches https://github.com/yourrepo/community_patches.git).
+These are optional patches (both patches and shell scripts are supported) provided by the community that can be applied to the RattlesnakeOS build process. I wouldn't recommend using this repository directly as additional patches could be put in here in the future that you may not want. Instead, I recommend forking this repository and update your `manifest` file to only include the patches you'd like then pass in your forked repository to rattlesnakeos-stack (e.g. --repo-patches https://github.com/yourrepo/community_patches.git).
 
-## Submitting Patches
+## Required Patch Repo Structure
+* You can put patch files anywhere in the repo as long as they have a .patch extension
+* You can put shell scripts anywhere in the repo as long as they have a .sh extension
+* Any patches and shell scripts you want to include in the build should have their full filename added to the `manifest` file at the root of the repository (one per line).
+
+## Submitting Community Patches
 Rules for submitting a patch:
 * Patches should have a number and name describing patch (e.g. 00002-description-of-patch.patch)
 * Patches should be fully tested with a build using latest version of rattlesnakeos-stack
