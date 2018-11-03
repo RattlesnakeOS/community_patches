@@ -103,6 +103,22 @@ index a0e368c7e..4f3fe88b8 100644
 
      // Set fifo event count zero for older devices which do not support batching. Fused
      // sensors also have their fifo counts set to zero.
+diff --git a/packages/apps/F-Droid/app/src/main/java/org/fdroid/fdroid/installer/ApkVerifier.java b/packages/apps/F-Droid/app/src/main/java/org/fdroid/fdroid/installer/ApkVerifier.java
+index e59ba367..c6edd542 100644
+--- a/packages/apps/F-Droid/app/src/main/java/org/fdroid/fdroid/installer/ApkVerifier.java
++++ b/packages/apps/F-Droid/app/src/main/java/org/fdroid/fdroid/installer/ApkVerifier.java
+@@ -113,10 +113,8 @@ class ApkVerifier {
+         if (expected == null || actual == null) {
+             return false;
+         }
+-        if (expected.length != actual.length) {
+-            return false;
+-        }
+         HashSet<String> expectedSet = new HashSet<>(Arrays.asList(expected));
++        expectedSet.add("android.permission.OTHER_SENSORS");
+         HashSet<String> actualSet = new HashSet<>(Arrays.asList(actual));
+         return expectedSet.equals(actualSet);
+     }
 --
 2.16.4
 
