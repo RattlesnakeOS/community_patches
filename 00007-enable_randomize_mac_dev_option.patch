@@ -1,0 +1,13 @@
+diff --git a/packages/apps/Settings/res/values/config.xml b/res/values/config.xml
+index 0a733079a9..57904cb8fb 100755
+--- a/packages/apps/Settings/res/values/config.xml
++++ b/packages/apps/Settings/res/values/config.xml
+@@ -43,7 +43,7 @@
+ 
+     <!-- Whether to show Connected MAC Randomization in Developer Options
+          as not all devices can support dynamic MAC address change.  -->
+-    <bool name="config_wifi_support_connected_mac_randomization">false</bool>
++    <bool name="config_wifi_support_connected_mac_randomization">true</bool>
+ 
+     <!-- Fully-qualified class name for the implementation of the FeatureFactory to be instantiated. -->
+     <string name="config_featureFactory" translatable="false">com.android.settings.overlay.FeatureFactoryImpl</string>
