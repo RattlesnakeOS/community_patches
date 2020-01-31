@@ -8,6 +8,7 @@ You can read more about custom patches in the [customization section of the ratt
 
 Currently, only the following patches have been updated and confirmed to be working in Android 10.0.
 
+* 00001-global-internet-permission-toggle.patch
 * 00003-disable-menu-entries-in-recovery.patch
 
 ## Submitting Community Patches
