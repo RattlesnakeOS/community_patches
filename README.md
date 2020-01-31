@@ -10,6 +10,7 @@ Currently, only the following patches have been updated and confirmed to be work
 
 * 00001-global-internet-permission-toggle.patch
 * 00003-disable-menu-entries-in-recovery.patch
+* 00004-increase-default-maximum-password-length.patch
 * 00008-round-icon.patch
 
 ## Submitting Community Patches
