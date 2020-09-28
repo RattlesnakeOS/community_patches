@@ -1,8 +1,169 @@
+####################################################
+# frameworks/base
+####################################################
+From 5a0fea90677a7442a7d45f798ad56ff90a899552 Mon Sep 17 00:00:00 2001
+From: inthewaves <inthewaves@pm.me>
+Date: Sat, 12 Sep 2020 12:28:34 -0700
+Subject: [PATCH 1/3] support new special runtime permissions
+
+These are treated as a runtime permission even for legacy apps. They
+need to be granted by default for all apps to maintain compatibility.
+
+Ported from 10: 4d5d82f4e2fb9ff68158bf30f3944591bb74dd04
+
+Changes from 10:
+- It seems like parts of PackageManagerService#resetUserChangesToRuntimePermissionsAndFlagsLPw
+were refactored into PermissionManagerService#resetRuntimePermissionsInternal.
+As a result, PackageManagerService is no longer modified.
+---
+ .../permission/PermissionManagerService.java  | 24 +++++++++++++++----
+ 1 file changed, 19 insertions(+), 5 deletions(-)
+
+diff --git a/frameworks/base/services/core/java/com/android/server/pm/permission/PermissionManagerService.java b/frameworks/base/services/core/java/com/android/server/pm/permission/PermissionManagerService.java
+index 9963cf7e212..99e0813f25d 100644
+--- a/frameworks/base/services/core/java/com/android/server/pm/permission/PermissionManagerService.java
++++ b/frameworks/base/services/core/java/com/android/server/pm/permission/PermissionManagerService.java
+@@ -1455,7 +1455,7 @@ public class PermissionManagerService extends IPermissionManager.Stub {
+         // to keep the review required permission flag per user while an
+         // install permission's state is shared across all users.
+         if (pkg.getTargetSdkVersion() < Build.VERSION_CODES.M
+-                && bp.isRuntime()) {
++                && bp.isRuntime() && !isSpecialRuntimePermission(permName)) {
+             return;
+         }
+ 
+@@ -1507,7 +1507,8 @@ public class PermissionManagerService extends IPermissionManager.Stub {
+                     + permName + " for package " + packageName);
+         }
+ 
+-        if (pkg.getTargetSdkVersion() < Build.VERSION_CODES.M) {
++        if (pkg.getTargetSdkVersion() < Build.VERSION_CODES.M
++                && !isSpecialRuntimePermission(permName)) {
+             Slog.w(TAG, "Cannot grant runtime permission to a legacy app");
+             return;
+         }
+@@ -1617,7 +1618,7 @@ public class PermissionManagerService extends IPermissionManager.Stub {
+         // to keep the review required permission flag per user while an
+         // install permission's state is shared across all users.
+         if (pkg.getTargetSdkVersion() < Build.VERSION_CODES.M
+-                && bp.isRuntime()) {
++                && bp.isRuntime() && !isSpecialRuntimePermission(bp.name)) {
+             return;
+         }
+ 
+@@ -1841,7 +1842,8 @@ public class PermissionManagerService extends IPermissionManager.Stub {
+ 
+             // If this permission was granted by default or role, make sure it is.
+             if ((oldFlags & FLAG_PERMISSION_GRANTED_BY_DEFAULT) != 0
+-                    || (oldFlags & FLAG_PERMISSION_GRANTED_BY_ROLE) != 0) {
++                    || (oldFlags & FLAG_PERMISSION_GRANTED_BY_ROLE) != 0
++                    || isSpecialRuntimePermission(bp.getName())) {
+                 // PermissionPolicyService will handle the app op for runtime permissions later.
+                 grantRuntimePermissionInternal(permName, packageName, false,
+                         Process.SYSTEM_UID, userId, delayingPermCallback);
+@@ -2479,6 +2481,10 @@ public class PermissionManagerService extends IPermissionManager.Stub {
+         }
+     }
+ 
++    public static boolean isSpecialRuntimePermission(final String permission) {
++        return false;
++    }
++
+     /**
+      * Restore the permission state for a package.
+      *
+@@ -2826,6 +2832,14 @@ public class PermissionManagerService extends IPermissionManager.Stub {
+                                             }
+                                         }
+                                     }
++
++                                    if (isSpecialRuntimePermission(bp.name) &&
++                                            origPermissions.getRuntimePermissionState(bp.name, userId) == null) {
++                                        if (permissionsState.grantRuntimePermission(bp, userId)
++                                                != PERMISSION_OPERATION_FAILURE) {
++                                            wasChanged = true;
++                                        }
++                                    }
+                                 } else {
+                                     if (permState == null) {
+                                         // New permission
+@@ -3772,7 +3786,7 @@ public class PermissionManagerService extends IPermissionManager.Stub {
+                     && (grantedPermissions == null
+                            || ArrayUtils.contains(grantedPermissions, permission))) {
+                 final int flags = permissionsState.getPermissionFlags(permission, userId);
+-                if (supportsRuntimePermissions) {
++                if (supportsRuntimePermissions || isSpecialRuntimePermission(bp.name)) {
+                     // Installer cannot change immutable permissions.
+                     if ((flags & immutableFlags) == 0) {
+                         grantRuntimePermissionInternal(permission, pkg.getPackageName(), false,
+-- 
+2.24.3 (Apple Git-128)
+
+
+From 4c6229bc7cdcbda4c52922de1336e65ebbe47f42 Mon Sep 17 00:00:00 2001
+From: Daniel Micay <danielmicay@gmail.com>
+Date: Sun, 17 Mar 2019 11:59:15 -0400
+Subject: [PATCH 2/3] make INTERNET into a special runtime permission
+
+Ported from 10: 5e2898e9d21dd6802bb0b0139e7e496c41e1cd80
+---
+ core/res/AndroidManifest.xml                                    | 2 +-
+ .../android/server/pm/permission/PermissionManagerService.java  | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/frameworks/base/core/res/AndroidManifest.xml b/frameworks/base/core/res/AndroidManifest.xml
+index 9945057f0e9..43e01645db8 100644
+--- a/frameworks/base/core/res/AndroidManifest.xml
++++ b/frameworks/base/core/res/AndroidManifest.xml
+@@ -1584,7 +1584,7 @@
+     <permission android:name="android.permission.INTERNET"
+         android:description="@string/permdesc_createNetworkSockets"
+         android:label="@string/permlab_createNetworkSockets"
+-        android:protectionLevel="normal|instant" />
++        android:protectionLevel="dangerous|instant" />
+ 
+     <!-- Allows applications to access information about networks.
+          <p>Protection level: normal
+diff --git a/frameworks/base/services/core/java/com/android/server/pm/permission/PermissionManagerService.java b/frameworks/base/services/core/java/com/android/server/pm/permission/PermissionManagerService.java
+index 99e0813f25d..d8476b29c8e 100644
+--- a/frameworks/base/services/core/java/com/android/server/pm/permission/PermissionManagerService.java
++++ b/frameworks/base/services/core/java/com/android/server/pm/permission/PermissionManagerService.java
+@@ -2482,7 +2482,7 @@ public class PermissionManagerService extends IPermissionManager.Stub {
+     }
+ 
+     public static boolean isSpecialRuntimePermission(final String permission) {
+-        return false;
++        return Manifest.permission.INTERNET.equals(permission);
+     }
+ 
+     /**
+-- 
+2.24.3 (Apple Git-128)
+
+
+From 5ab4a769427c99e802831ccb0f0a1aee5ba2a8a2 Mon Sep 17 00:00:00 2001
+From: Daniel Micay <danielmicay@gmail.com>
+Date: Fri, 21 Jul 2017 11:23:07 -0400
+Subject: [PATCH 3/3] add a NETWORK permission group for INTERNET
+
+Ported from 10: b5c9f9407d5f5407686ea8c02fa67573ddc07824
+
+Changes from 10:
+- Needed to run `m api-stubs-docs-non-updatable-update-current-api`
+to fix the "You have tried to change the API from what has been
+previously approved" errors.
+---
+ api/current.txt                 | 1 +
+ core/res/AndroidManifest.xml    | 8 ++++++++
+ core/res/res/values/strings.xml | 5 +++++
+ non-updatable-api/current.txt   | 1 +
+ 4 files changed, 15 insertions(+)
+
 diff --git a/frameworks/base/api/current.txt b/frameworks/base/api/current.txt
-index cd78602d9cd..b99634c1174 100644
+index 952ccdad992..728c0e95ca6 100644
 --- a/frameworks/base/api/current.txt
 +++ b/frameworks/base/api/current.txt
-@@ -176,6 +176,7 @@ package android {
+@@ -184,6 +184,7 @@ package android {
      field public static final String CONTACTS = "android.permission-group.CONTACTS";
      field public static final String LOCATION = "android.permission-group.LOCATION";
      field public static final String MICROPHONE = "android.permission-group.MICROPHONE";
@@ -11,10 +172,10 @@ index cd78602d9cd..b99634c1174 100644
      field public static final String SENSORS = "android.permission-group.SENSORS";
      field public static final String SMS = "android.permission-group.SMS";
 diff --git a/frameworks/base/core/res/AndroidManifest.xml b/frameworks/base/core/res/AndroidManifest.xml
-index a3fccd96f22..4e94d497b68 100644
+index 43e01645db8..82e3d98494a 100644
 --- a/frameworks/base/core/res/AndroidManifest.xml
 +++ b/frameworks/base/core/res/AndroidManifest.xml
-@@ -1507,13 +1507,21 @@
+@@ -1578,10 +1578,18 @@
      <!-- ======================================= -->
      <eat-comment />
  
@@ -32,18 +193,14 @@ index a3fccd96f22..4e94d497b68 100644
 +        android:permissionGroup="android.permission-group.UNDEFINED"
          android:description="@string/permdesc_createNetworkSockets"
          android:label="@string/permlab_createNetworkSockets"
--        android:protectionLevel="normal|instant" />
-+        android:protectionLevel="dangerous|instant" />
- 
-     <!-- Allows applications to access information about networks.
-          <p>Protection level: normal
+         android:protectionLevel="dangerous|instant" />
 diff --git a/frameworks/base/core/res/res/values/strings.xml b/frameworks/base/core/res/res/values/strings.xml
-index 152b131af8f..f6869111dea 100644
+index 00e3f21ad4f..4f3bde99d7f 100644
 --- a/frameworks/base/core/res/res/values/strings.xml
 +++ b/frameworks/base/core/res/res/values/strings.xml
-@@ -789,6 +789,11 @@
-     <string name="permgrouprequest_sensors">Allow
-         &lt;b><xliff:g id="app_name" example="Gmail">%1$s</xliff:g>&lt;/b> to access sensor data about your vital signs?</string>
+@@ -804,6 +804,11 @@
+     <!-- Description of a category of application permissions, listed so the user can choose whether they want to allow the application to do this. -->
+     <string name="permgroupdesc_sensors">access sensor data about your vital signs</string>
  
 +    <!-- Title of a category of application permissions, listed so the user can choose whether they want to allow the application to do this. -->
 +    <string name="permgrouplab_network">Network</string>
@@ -53,203 +210,40 @@ index 152b131af8f..f6869111dea 100644
      <!-- Title for the capability of an accessibility service to retrieve window content. -->
      <string name="capability_title_canRetrieveWindowContent">Retrieve window content</string>
      <!-- Description for the capability of an accessibility service to retrieve window content. -->
-diff --git a/frameworks/base/services/core/java/com/android/server/connectivity/PermissionMonitor.java b/frameworks/base/services/core/java/com/android/server/connectivity/PermissionMonitor.java
-index fbe2589bea2..8061504a1be 100644
---- a/frameworks/base/services/core/java/com/android/server/connectivity/PermissionMonitor.java
-+++ b/frameworks/base/services/core/java/com/android/server/connectivity/PermissionMonitor.java
-@@ -29,6 +29,7 @@ import static android.os.Process.INVALID_UID;
- import static android.os.Process.SYSTEM_UID;
- 
- import android.annotation.NonNull;
-+import android.annotation.UserIdInt;
- import android.content.Context;
- import android.content.pm.ApplicationInfo;
- import android.content.pm.PackageInfo;
-@@ -55,6 +56,7 @@ import com.android.internal.util.ArrayUtils;
- import com.android.internal.util.IndentingPrintWriter;
- import com.android.server.LocalServices;
- import com.android.server.SystemConfig;
-+import com.android.server.pm.permission.PermissionManagerServiceInternal;
- 
- import java.util.ArrayList;
- import java.util.Collection;
-@@ -80,6 +82,7 @@ public class PermissionMonitor {
-     private static final int VERSION_Q = Build.VERSION_CODES.Q;
- 
-     private final PackageManager mPackageManager;
-+    private final PackageManagerInternal mPackageManagerInternal;
-     private final UserManager mUserManager;
-     private final INetd mNetd;
- 
-@@ -104,26 +107,6 @@ public class PermissionMonitor {
- 
-     private class PackageListObserver implements PackageManagerInternal.PackageListObserver {
- 
--        private int getPermissionForUid(int uid) {
--            int permission = 0;
--            // Check all the packages for this UID. The UID has the permission if any of the
--            // packages in it has the permission.
--            String[] packages = mPackageManager.getPackagesForUid(uid);
--            if (packages != null && packages.length > 0) {
--                for (String name : packages) {
--                    final PackageInfo app = getPackageInfo(name);
--                    if (app != null && app.requestedPermissions != null) {
--                        permission |= getNetdPermissionMask(app.requestedPermissions,
--                              app.requestedPermissionsFlags);
--                    }
--                }
--            } else {
--                // The last package of this uid is removed from device. Clean the package up.
--                permission = INetd.PERMISSION_UNINSTALLED;
--            }
--            return permission;
--        }
--
-         @Override
-         public void onPackageAdded(String packageName, int uid) {
-             sendPackagePermissionsForUid(uid, getPermissionForUid(uid));
-@@ -135,10 +118,46 @@ public class PermissionMonitor {
-         }
-     }
- 
-+    private int getPermissionForUid(int uid) {
-+        int permission = 0;
-+        // Check all the packages for this UID. The UID has the permission if any of the
-+        // packages in it has the permission.
-+        String[] packages = mPackageManager.getPackagesForUid(uid);
-+        if (packages != null && packages.length > 0) {
-+            for (String name : packages) {
-+                final PackageInfo app = getPackageInfo(name);
-+                if (app != null && app.requestedPermissions != null) {
-+                    permission |= getNetdPermissionMask(app.requestedPermissions,
-+                          app.requestedPermissionsFlags);
-+                }
-+            }
-+        } else {
-+            // The last package of this uid is removed from device. Clean the package up.
-+            permission = INetd.PERMISSION_UNINSTALLED;
-+        }
-+        return permission;
-+    }
-+
-+    // implements OnRuntimePermissionStateChangedListener
-+    private void enforceINTERNETAsRuntimePermission(@NonNull String packageName,
-+            @UserIdInt int userId) {
-+        // userId is _not_ uid
-+        int uid = mPackageManagerInternal.getPackageUid(packageName, 0, userId);
-+        sendPackagePermissionsForUid(uid, getPermissionForUid(uid));
-+    }
-+
-     public PermissionMonitor(Context context, INetd netd) {
-         mPackageManager = context.getPackageManager();
-         mUserManager = (UserManager) context.getSystemService(Context.USER_SERVICE);
-         mNetd = netd;
-+
-+        mPackageManagerInternal = LocalServices.getService(
-+                PackageManagerInternal.class);
-+
-+        final PermissionManagerServiceInternal permManagerInternal = LocalServices.getService(
-+                PermissionManagerServiceInternal.class);
-+        permManagerInternal.addOnRuntimePermissionStateChangedListener(
-+                this::enforceINTERNETAsRuntimePermission);
-     }
- 
-     // Intended to be called only once at startup, after the system is ready. Installs a broadcast
-diff --git a/frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java b/frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java
-index 7469e099421..8413ec77088 100644
---- a/frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java
-+++ b/frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java
-@@ -19926,7 +19926,8 @@ public class PackageManagerService extends IPackageManager.Stub
-             }
- 
-             // If this permission was granted by default, make sure it is.
--            if ((oldFlags & FLAG_PERMISSION_GRANTED_BY_DEFAULT) != 0) {
-+            if ((oldFlags & FLAG_PERMISSION_GRANTED_BY_DEFAULT) != 0
-+                    || PermissionManagerService.isSpecialRuntimePermission(bp.getName())) {
-                 mPermissionManager.grantRuntimePermission(permName, packageName, false,
-                         Process.SYSTEM_UID, userId, delayingPermCallback);
-             // If permission review is enabled the permissions for a legacy apps
-diff --git a/frameworks/base/services/core/java/com/android/server/pm/permission/PermissionManagerService.java b/frameworks/base/services/core/java/com/android/server/pm/permission/PermissionManagerService.java
-index 8884821c770..88b6a012210 100644
---- a/frameworks/base/services/core/java/com/android/server/pm/permission/PermissionManagerService.java
-+++ b/frameworks/base/services/core/java/com/android/server/pm/permission/PermissionManagerService.java
-@@ -855,6 +855,10 @@ public class PermissionManagerService {
-         }
-     }
- 
-+    public static boolean isSpecialRuntimePermission(final String permission) {
-+        return Manifest.permission.INTERNET.equals(permission);
-+    }
-+
-     /**
-      * Restore the permission state for a package.
-      *
-@@ -1146,6 +1150,14 @@ public class PermissionManagerService {
-                                             }
-                                         }
-                                     }
-+
-+                                    if (isSpecialRuntimePermission(bp.name) &&
-+                                            origPermissions.getRuntimePermissionState(bp.name, userId) == null) {
-+                                        if (permissionsState.grantRuntimePermission(bp, userId)
-+                                                != PERMISSION_OPERATION_FAILURE) {
-+                                            wasChanged = true;
-+                                        }
-+                                    }
-                                 } else {
-                                     if (permState == null) {
-                                         // New permission
-@@ -1279,7 +1291,7 @@ public class PermissionManagerService {
-                                              wasChanged = true;
-                                         }
-                                     }
--                                } else {
-+				} else {
-                                     if (!permissionsState.hasRuntimePermission(bp.name, userId)
-                                             && permissionsState.grantRuntimePermission(bp,
-                                                     userId) != PERMISSION_OPERATION_FAILURE) {
-@@ -2060,7 +2072,7 @@ public class PermissionManagerService {
-                     && (grantedPermissions == null
-                            || ArrayUtils.contains(grantedPermissions, permission))) {
-                 final int flags = permissionsState.getPermissionFlags(permission, userId);
--                if (supportsRuntimePermissions) {
-+                if (supportsRuntimePermissions || isSpecialRuntimePermission(bp.name)) {
-                     // Installer cannot change immutable permissions.
-                     if ((flags & immutableFlags) == 0) {
-                         grantRuntimePermission(permission, pkg.packageName, false, callingUid,
-@@ -2118,7 +2130,7 @@ public class PermissionManagerService {
-         // to keep the review required permission flag per user while an
-         // install permission's state is shared across all users.
-         if (pkg.applicationInfo.targetSdkVersion < Build.VERSION_CODES.M
--                && bp.isRuntime()) {
-+                && bp.isRuntime() && !isSpecialRuntimePermission(bp.name)) {
-             return;
-         }
- 
-@@ -2170,7 +2182,8 @@ public class PermissionManagerService {
-                     + permName + " for package " + packageName);
-         }
- 
--        if (pkg.applicationInfo.targetSdkVersion < Build.VERSION_CODES.M) {
-+        if (pkg.applicationInfo.targetSdkVersion < Build.VERSION_CODES.M
-+                && !isSpecialRuntimePermission(permName)) {
-             Slog.w(TAG, "Cannot grant runtime permission to a legacy app");
-             return;
-         }
-@@ -2256,7 +2269,7 @@ public class PermissionManagerService {
-         // to keep the review required permission flag per user while an
-         // install permission's state is shared across all users.
-         if (pkg.applicationInfo.targetSdkVersion < Build.VERSION_CODES.M
--                && bp.isRuntime()) {
-+                && bp.isRuntime() && !isSpecialRuntimePermission(permName)) {
-             return;
-         }
- 
-diff --git a/packages/apps/PermissionController/src/com/android/packageinstaller/permission/model/AppPermissionGroup.java b/packages/apps/PermissionController/src/com/android/packageinstaller/permission/model/AppPermissionGroup.java
-index da527777..c9fa2ca3 100644
---- a/packages/apps/PermissionController/src/com/android/packageinstaller/permission/model/AppPermissionGroup.java
-+++ b/packages/apps/PermissionController/src/com/android/packageinstaller/permission/model/AppPermissionGroup.java
-@@ -33,6 +33,7 @@ import android.content.pm.PackageManager;
+diff --git a/frameworks/base/non-updatable-api/current.txt b/frameworks/base/non-updatable-api/current.txt
+index 5f15216e840..189544f9859 100644
+--- a/frameworks/base/non-updatable-api/current.txt
++++ b/frameworks/base/non-updatable-api/current.txt
+@@ -184,6 +184,7 @@ package android {
+     field public static final String CONTACTS = "android.permission-group.CONTACTS";
+     field public static final String LOCATION = "android.permission-group.LOCATION";
+     field public static final String MICROPHONE = "android.permission-group.MICROPHONE";
++    field public static final String NETWORK = "android.permission-group.NETWORK";
+     field public static final String PHONE = "android.permission-group.PHONE";
+     field public static final String SENSORS = "android.permission-group.SENSORS";
+     field public static final String SMS = "android.permission-group.SMS";
+-- 
+2.24.3 (Apple Git-128)
+
+####################################################
+# packages/apps/PermissionController
+####################################################
+From f16059b2b6f65cb5624679821c2cbf00c64b619c Mon Sep 17 00:00:00 2001
+From: Daniel Micay <danielmicay@gmail.com>
+Date: Sat, 22 Jul 2017 21:43:50 -0400
+Subject: [PATCH 1/2] always treat INTERNET as a runtime permission
+
+ported from 10: 6c4f112dde47f21ce5a583f5bd8b217db6de5c02
+---
+ .../permission/model/AppPermissionGroup.java                 | 5 +++--
+ .../permissioncontroller/permission/model/Permission.java    | 3 ++-
+ 2 files changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/packages/apps/PermissionController/src/com/android/permissioncontroller/permission/model/AppPermissionGroup.java b/packages/apps/PermissionController/src/com/android/permissioncontroller/permission/model/AppPermissionGroup.java
+index aeb90811..0399a183 100644
+--- a/packages/apps/PermissionController/src/com/android/permissioncontroller/permission/model/AppPermissionGroup.java
++++ b/packages/apps/PermissionController/src/com/android/permissioncontroller/permission/model/AppPermissionGroup.java
+@@ -34,6 +34,7 @@ import android.content.pm.PackageManager;
  import android.content.pm.PackageManager.NameNotFoundException;
  import android.content.pm.PermissionGroupInfo;
  import android.content.pm.PermissionInfo;
@@ -257,7 +251,7 @@ index da527777..c9fa2ca3 100644
  import android.os.Build;
  import android.os.UserHandle;
  import android.permission.PermissionManager;
-@@ -785,7 +786,7 @@ public final class AppPermissionGroup implements Comparable<AppPermissionGroup>
+@@ -872,7 +873,7 @@ public final class AppPermissionGroup implements Comparable<AppPermissionGroup>
  
              boolean wasGranted = permission.isGrantedIncludingAppOp();
  
@@ -266,7 +260,7 @@ index da527777..c9fa2ca3 100644
                  // Do not touch permissions fixed by the system.
                  if (permission.isSystemFixed()) {
                      wasAllGranted = false;
-@@ -962,7 +963,7 @@ public final class AppPermissionGroup implements Comparable<AppPermissionGroup>
+@@ -1057,7 +1058,7 @@ public final class AppPermissionGroup implements Comparable<AppPermissionGroup>
                  break;
              }
  
@@ -275,11 +269,11 @@ index da527777..c9fa2ca3 100644
                  // Revoke the permission if needed.
                  if (permission.isGranted()) {
                      permission.setGranted(false);
-diff --git a/packages/apps/PermissionController/src/com/android/packageinstaller/permission/model/Permission.java b/packages/apps/PermissionController/src/com/android/packageinstaller/permission/model/Permission.java
-index 463c3479..c2ec8890 100644
---- a/packages/apps/PermissionController/src/com/android/packageinstaller/permission/model/Permission.java
-+++ b/packages/apps/PermissionController/src/com/android/packageinstaller/permission/model/Permission.java
-@@ -18,6 +18,7 @@ package com.android.packageinstaller.permission.model;
+diff --git a/packages/apps/PermissionController/src/com/android/permissioncontroller/permission/model/Permission.java b/packages/apps/PermissionController/src/com/android/permissioncontroller/permission/model/Permission.java
+index 49381db2..3af5241a 100644
+--- a/packages/apps/PermissionController/src/com/android/permissioncontroller/permission/model/Permission.java
++++ b/packages/apps/PermissionController/src/com/android/permissioncontroller/permission/model/Permission.java
+@@ -18,6 +18,7 @@ package com.android.permissioncontroller.permission.model;
  
  import android.content.pm.PackageManager;
  import android.content.pm.PermissionInfo;
@@ -287,7 +281,7 @@ index 463c3479..c2ec8890 100644
  
  import androidx.annotation.NonNull;
  
-@@ -136,7 +137,7 @@ public final class Permission {
+@@ -137,7 +138,7 @@ public final class Permission {
       * @return {@code true} if the permission (and the app-op) is granted.
       */
      public boolean isGrantedIncludingAppOp() {
@@ -296,11 +290,25 @@ index 463c3479..c2ec8890 100644
      }
  
      public boolean isReviewRequired() {
-diff --git a/packages/apps/PermissionController/src/com/android/packageinstaller/permission/utils/Utils.java b/packages/apps/PermissionController/src/com/android/packageinstaller/permission/utils/Utils.java
-index 707b9f7b..cbde987a 100644
---- a/packages/apps/PermissionController/src/com/android/packageinstaller/permission/utils/Utils.java
-+++ b/packages/apps/PermissionController/src/com/android/packageinstaller/permission/utils/Utils.java
-@@ -24,6 +24,7 @@ import static android.Manifest.permission_group.CAMERA;
+-- 
+2.24.3 (Apple Git-128)
+
+
+From 796bd7ca347b7163797ede28b513d1ab17c226a0 Mon Sep 17 00:00:00 2001
+From: Daniel Micay <danielmicay@gmail.com>
+Date: Fri, 21 Jul 2017 10:29:15 -0400
+Subject: [PATCH 2/2] add INTERNET permission toggle
+
+ported from 10: a07271ed7e45239369f2ca33496d939d2e9cbd08
+---
+ .../android/permissioncontroller/permission/utils/Utils.java   | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/packages/apps/PermissionController/src/com/android/permissioncontroller/permission/utils/Utils.java b/packages/apps/PermissionController/src/com/android/permissioncontroller/permission/utils/Utils.java
+index 65fdd590..2f0dc3d2 100644
+--- a/packages/apps/PermissionController/src/com/android/permissioncontroller/permission/utils/Utils.java
++++ b/packages/apps/PermissionController/src/com/android/permissioncontroller/permission/utils/Utils.java
+@@ -25,6 +25,7 @@ import static android.Manifest.permission_group.CAMERA;
  import static android.Manifest.permission_group.CONTACTS;
  import static android.Manifest.permission_group.LOCATION;
  import static android.Manifest.permission_group.MICROPHONE;
@@ -308,7 +316,7 @@ index 707b9f7b..cbde987a 100644
  import static android.Manifest.permission_group.PHONE;
  import static android.Manifest.permission_group.SENSORS;
  import static android.Manifest.permission_group.SMS;
-@@ -169,6 +170,8 @@ public final class Utils {
+@@ -209,6 +210,8 @@ public final class Utils {
  
          PLATFORM_PERMISSIONS.put(Manifest.permission.BODY_SENSORS, SENSORS);
  
@@ -317,4 +325,5 @@ index 707b9f7b..cbde987a 100644
          PLATFORM_PERMISSION_GROUPS = new ArrayMap<>();
          int numPlatformPermissions = PLATFORM_PERMISSIONS.size();
          for (int i = 0; i < numPlatformPermissions; i++) {
-
+-- 
+2.24.3 (Apple Git-128)
