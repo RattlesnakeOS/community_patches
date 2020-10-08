@@ -1,0 +1,66 @@
+diff --git a/frameworks/base/core/res/res/values/config.xml b/frameworks/base/core/res/res/values/config.xml
+index 04d1eef..5362e2b 100644
+--- a/frameworks/base/core/res/res/values/config.xml
++++ b/frameworks/base/core/res/res/values/config.xml
+@@ -2983,18 +2983,18 @@
+     <bool name="imsServiceAllowTurnOff">true</bool>
+ 
+     <!-- Flag specifying whether VoLTE is available on device -->
+-    <bool name="config_device_volte_available">false</bool>
++    <bool name="config_device_volte_available">true</bool>
+ 
+     <!-- Flag specifying whether VoLTE should be available for carrier: independent of
+          carrier provisioning. If false: hard disabled. If true: then depends on carrier
+          provisioning, availability etc -->
+-    <bool name="config_carrier_volte_available">false</bool>
++    <bool name="config_carrier_volte_available">true</bool>
+ 
+     <!-- Flag specifying whether VoLTE TTY is supported -->
+     <bool name="config_carrier_volte_tty_supported">true</bool>
+ 
+     <!-- Flag specifying whether VT is available on device -->
+-    <bool name="config_device_vt_available">false</bool>
++    <bool name="config_device_vt_available">true</bool>
+ 
+     <!-- Flag specifying whether the device will use the "allow_hold_in_ims_call" carrier config
+          option.  When false, the device will support holding of IMS calls, regardless of the
+@@ -3004,15 +3004,15 @@
+     <!-- Flag specifying whether VT should be available for carrier: independent of
+          carrier provisioning. If false: hard disabled. If true: then depends on carrier
+          provisioning, availability etc -->
+-    <bool name="config_carrier_vt_available">false</bool>
++    <bool name="config_carrier_vt_available">true</bool>
+ 
+     <!-- Flag specifying whether WFC over IMS is available on device -->
+-        <bool name="config_device_wfc_ims_available">false</bool>
++        <bool name="config_device_wfc_ims_available">true</bool>
+ 
+     <!-- Flag specifying whether WFC over IMS should be available for carrier: independent of
+          carrier provisioning. If false: hard disabled. If true: then depends on carrier
+          provisioning, availability etc -->
+-    <bool name="config_carrier_wfc_ims_available">false</bool>
++    <bool name="config_carrier_wfc_ims_available">true</bool>
+ 
+     <!-- Whether to use voip audio mode for ims call -->
+     <bool name="config_use_voip_mode_for_ims">false</bool>
+diff --git a/device/google/bonito/product.prop b/device/google/bonito/product.prop
+index f1247c0..4114493 100644
+--- a/device/google/bonito/product.prop
++++ b/device/google/bonito/product.prop
+@@ -41,6 +41,16 @@ vidc.enc.disable.pq=1
+ persist.data.netmgrd.qos.enable=true
+ persist.vendor.data.mode=concurrent
+ 
++#
++## Enable wifi calling and volte
++#
++persist.dbg.ims_volte_enable=1
++persist.dbg.volte_avail_ovr=1
++persist.dbg.vt_avail_ovr=0
++persist.data.iwlan.enable=true
++persist.dbg.wfc_avail_ovr=1
++ro.ril.enable.amr.wideband=1
++
+ # system props for time-services
+ persist.timed.enable=true
+ 

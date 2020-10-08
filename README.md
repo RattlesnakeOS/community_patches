@@ -9,6 +9,8 @@ You can read more about custom patches in the [customization section of the ratt
 Currently, only the following patches have been updated and confirmed to be working in Android 11.0.
 
 * `00001-global-internet-permission-toggle.patch` - this patch adds an additional global network permission.
+* `00002-round-icon.patch` - show round icons in launcher, quick setting tiles.
+* `00003-Enable-WiFi-and-4G-calling-sargo-bonito.patch` - Enable VoLTE/Wifi calling in sargo/bonito (3a/XL).
 
 ## Submitting Community Patches
 Rules for submitting a patch:
