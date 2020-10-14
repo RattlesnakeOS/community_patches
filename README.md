@@ -12,6 +12,7 @@ Currently, only the following patches have been updated and confirmed to be work
 * `00002-round-icon.patch` - show round icons in launcher, quick setting tiles.
 * `00003-enable-volte-wifi-calling.patch` - enable VoLTE/4G and WiFi calling (only sargo/bonito and sunfish).
 * `00004-use-cloudflare-dns.patch` - fallback to Cloudflare DNS instead of Google DNS.
+* `00005-2-button-navigation.patch` - add back 2-button navigation.
 
 ## Submitting Community Patches
 Rules for submitting a patch:

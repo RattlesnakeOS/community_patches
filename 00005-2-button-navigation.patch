@@ -1,0 +1,10 @@
+--- a/frameworks/base/packages/overlays/Android.mk	2020-10-12 16:45:54.430991688 +1100
++++ b/frameworks/base/packages/overlays/Android.mk	2020-10-12 16:49:02.698761203 +1100
+@@ -52,6 +52,7 @@
+ 	IconShapeTeardropOverlay \
+ 	IconShapeVesselOverlay \
+ 	NavigationBarMode3ButtonOverlay \
++	NavigationBarMode2ButtonOverlay \
+ 	NavigationBarModeGesturalOverlay \
+ 	NavigationBarModeGesturalOverlayNarrowBack \
+ 	NavigationBarModeGesturalOverlayWideBack \
