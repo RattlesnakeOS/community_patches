@@ -10,7 +10,7 @@ Currently, only the following patches have been updated and confirmed to be work
 
 * `00001-global-internet-permission-toggle.patch` - this patch adds an additional global network permission.
 * `00002-round-icon.patch` - show round icons in launcher, quick setting tiles.
-* `00003-Enable-WiFi-and-4G-calling-sargo-bonito.patch` - Enable VoLTE/Wifi calling in sargo/bonito (3a/XL).
+* `00003-enable-volte-wifi-calling.patch` - enable VoLTE/4G and WiFi calling (only sargo/bonito and sunfish).
 
 ## Submitting Community Patches
 Rules for submitting a patch:
