@@ -1,8 +1,6 @@
-diff --git a/frameworks/base/core/res/res/values/config.xml b/frameworks/base/core/res/res/values/config.xml
-index 04d1eef..5362e2b 100644
---- a/frameworks/base/core/res/res/values/config.xml
-+++ b/frameworks/base/core/res/res/values/config.xml
-@@ -2983,18 +2983,18 @@
+--- a/frameworks/base/core/res/res/values/config.xml	2020-10-13 15:25:39.884460877 +1100
++++ b/frameworks/base/core/res/res/values/config.xml	2020-10-13 15:37:19.844769099 +1100
+@@ -2856,18 +2856,18 @@
      <bool name="imsServiceAllowTurnOff">true</bool>
  
      <!-- Flag specifying whether VoLTE is available on device -->
@@ -24,7 +22,7 @@ index 04d1eef..5362e2b 100644
  
      <!-- Flag specifying whether the device will use the "allow_hold_in_ims_call" carrier config
           option.  When false, the device will support holding of IMS calls, regardless of the
-@@ -3004,15 +3004,15 @@
+@@ -2877,15 +2877,15 @@
      <!-- Flag specifying whether VT should be available for carrier: independent of
           carrier provisioning. If false: hard disabled. If true: then depends on carrier
           provisioning, availability etc -->
@@ -43,14 +41,13 @@ index 04d1eef..5362e2b 100644
  
      <!-- Whether to use voip audio mode for ims call -->
      <bool name="config_use_voip_mode_for_ims">false</bool>
-diff --git a/device/google/bonito/product.prop b/device/google/bonito/product.prop
-index f1247c0..4114493 100644
---- a/device/google/bonito/product.prop
-+++ b/device/google/bonito/product.prop
-@@ -41,6 +41,16 @@ vidc.enc.disable.pq=1
- persist.data.netmgrd.qos.enable=true
- persist.vendor.data.mode=concurrent
- 
+--- a/device/google/bonito/product.prop	2020-10-13 16:46:34.041020350 +1100
++++ b/device/google/bonito/product.prop	2020-10-13 16:47:23.629630753 +1100
+@@ -87,3 +87,13 @@
+ persist.bluetooth.bqr.event_mask=14
+ # BQR minimum report interval configuration
+ persist.bluetooth.bqr.min_interval_ms=500
++
 +#
 +## Enable wifi calling and volte
 +#
@@ -59,8 +56,20 @@ index f1247c0..4114493 100644
 +persist.dbg.vt_avail_ovr=0
 +persist.data.iwlan.enable=true
 +persist.dbg.wfc_avail_ovr=1
-+ro.ril.enable.amr.wideband=1
++o.ril.enable.amr.wideband=1
+--- a/device/google/sunfish/product.prop	2020-10-12 23:25:26.548963534 +1100
++++ b/device/google/sunfish/product.prop	2020-10-12 23:28:37.868652717 +1100
+@@ -94,3 +94,13 @@
+ persist.bluetooth.bqr.event_mask=14
+ # BQR minimum report interval configuration
+ persist.bluetooth.bqr.min_interval_ms=500
 +
- # system props for time-services
- persist.timed.enable=true
- 
++#
++## Enable wifi calling and volte
++#
++persist.dbg.ims_volte_enable=1
++persist.dbg.volte_avail_ovr=1
++persist.dbg.vt_avail_ovr=0
++persist.data.iwlan.enable=true
++persist.dbg.wfc_avail_ovr=1
++o.ril.enable.amr.wideband=1
