@@ -13,6 +13,8 @@ Currently, only the following patches have been updated and confirmed to be work
 * `00003-enable-volte-wifi-calling.patch` - enable VoLTE/4G and WiFi calling (only sargo/bonito and sunfish).
 * `00004-use-cloudflare-dns.patch` - fallback to Cloudflare DNS instead of Google DNS.
 * `00005-2-button-navigation.patch` - add back 2-button navigation.
+* `00006-increase-default-maximum-password-length.patch` - increase the maximum password length
+* `00007-set-seedvault-as-dftl-bkp-provider.patch` - change the default backup provider to seedvault
 
 ## Submitting Community Patches
 Rules for submitting a patch:
